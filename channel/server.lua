@@ -55,58 +55,63 @@ function makeScaryAlbum(video) --SCARY video!!!
 	end
 	return blank
 end
-
-function loadVideo()
+if not _G.videos then
+	_G.videos = {}
+end
+function loadVideo(audiodir)
 	local datas = {}
+	if not _G.videos[audiodir.."out.pbb"] then
+		local filename = audiodir.."out.pbb"
+		local file = fs.open(filename, "rb")
+		local filedata = file.readAll()
+		file.close()
+		print("Video loaded, starting decoding")
+		local off = 0
 
-	local filename = audiodir.."out.pbb"
-	local file = fs.open(filename, "rb")
-	local filedata = file.readAll()
-	file.close()
-	print("Video loaded, starting decoding")
-	local off = 0
+		local b = {}
+		local c = filedata:len() 
+		for x=1,c do
+			table.insert(b, math.floor(filedata:byte(x)))
+			if x % 3000000 == 0 then
+				sleep()
+				print("current: "..x, "remaining: "..c)
+			end
+		end
+		print("Video decode 1")
+		local a = 0
+		while 1 do
+			a = a + 1
+			if a % 3000000 == 0 then
+				sleep()
+			end
+			print(b[1+off], "balls")
+			if b[1+off]==nil then break end
+			local size = {w = b[1+off]^2^8+b[2+off], h = b[3+off]^2^8+b[4+off]} --Convert the first 4 bytes to 2 16 bit numbers representing width and height.
 
-	local b = {}
-	local c = filedata:len() 
-	for x=1,c do
-		table.insert(b, math.floor(filedata:byte(x)))
-		if x % 3000000 == 0 then
+			local bitdepth = math.floor(b[5+off]/16)
+			local nextoff = off+5
+			print(nextoff, 2)
+
+			if b[5+off]%16==2 then
+				nextoff = nextoff + 2^bitdepth*3 --Add rgb bytes if palette is enabled
+			end
+			print(nextoff, 3)
+
+			print(size.w,size.h)
+			print(math.floor(size.w/2),math.floor(size.h))
+			nextoff = nextoff + math.floor(size.w/2)*math.floor(size.h)
+			print(nextoff, 4)
+
+			local rdata = filedata:sub(1+off, nextoff)
+			table.insert(datas, rdata)
+			off = nextoff
+
 			sleep()
-			print("current: "..x, "remaining: "..c)
 		end
+		_G.videos[audiodir.."out.pbb"] = datas
+	else
+		datas = _G.videos[audiodir.."out.pbb"]
 	end
-	print("Video decode 1")
-	local a = 0
-	while 1 do
-		a = a + 1
-		if a % 3000000 == 0 then
-			sleep()
-		end
-		print(b[1+off], "balls")
-		if b[1+off]==nil then break end
-		local size = {w = b[1+off]^2^8+b[2+off], h = b[3+off]^2^8+b[4+off]} --Convert the first 4 bytes to 2 16 bit numbers representing width and height.
-
-		local bitdepth = math.floor(b[5+off]/16)
-		local nextoff = off+5
-		print(nextoff, 2)
-
-		if b[5+off]%16==2 then
-			nextoff = nextoff + 2^bitdepth*3 --Add rgb bytes if palette is enabled
-		end
-		print(nextoff, 3)
-
-		print(size.w,size.h)
-		print(math.floor(size.w/2),math.floor(size.h))
-		nextoff = nextoff + math.floor(size.w/2)*math.floor(size.h)
-		print(nextoff, 4)
-
-		local rdata = filedata:sub(1+off, nextoff)
-		table.insert(datas, rdata)
-		off = nextoff
-
-		sleep()
-	end
-
 	return datas
 end
 

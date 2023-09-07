@@ -108,7 +108,6 @@ local function drawVideo(video,fsubtitle)
 			end
 		else
 			local data = video
-			local mon = frame
 
 			if fsubtitle then
 				subtitle = fsubtitle
@@ -148,7 +147,7 @@ local function drawVideo(video,fsubtitle)
 				end
 			end
 
-			local monitor = pb.new(mon)
+			local monitor = pb.new(frame)
 			local monsizew, monsizeh = mon.getSize()
 
 			monitor:clear(c(15))
