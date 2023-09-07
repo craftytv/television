@@ -52,6 +52,49 @@ function makeScaryAlbum(video) --SCARY video!!!
 	end
 	return blank
 end
+
+function loadVideo()
+	local datas = {}
+
+	local filename = "net/out.pbb"
+	local file = fs.open(filename, "rb")
+	local filedata = file.readAll()
+	file.close()
+
+	local off = 0
+
+	local b = {}
+	for x=1,filedata:len() do
+		table.insert(b, math.floor(filedata:byte(x)))
+	end
+
+	while 1 do
+		print(b[1+off], "balls")
+		if b[1+off]==nil then break end
+		local size = {w = b[1+off]^2^8+b[2+off], h = b[3+off]^2^8+b[4+off]} --Convert the first 4 bytes to 2 16 bit numbers representing width and height.
+
+		local bitdepth = math.floor(b[5+off]/16)
+		local nextoff = off+5
+		print(nextoff, 2)
+
+		if b[5+off]%16==2 then
+			nextoff = nextoff + 2^bitdepth*3 --Add rgb bytes if palette is enabled
+		end
+		print(nextoff, 3)
+
+		print(size.w,size.h)
+		print(math.floor(size.w/2),math.floor(size.h))
+		nextoff = nextoff + math.floor(size.w/2)*math.floor(size.h)
+		print(nextoff, 4)
+
+		local rdata = filedata:sub(1+off, nextoff)
+		table.insert(datas, rdata)
+		off = nextoff
+	end
+
+	return datas
+end
+
 function broadcastLoadingFrame(video)
 	modem.transmit(channel, channel, { --transmit with audio so 1fps is around 12k bytes
 		protocol = "stereovideo",
@@ -74,6 +117,8 @@ function broadcastLoadingFrame(video)
 		}
 	})
 end
+
+local subtitle = ""
 --main
 local songs = require("/net/songs")
 while "" do--silly goofball loop
@@ -89,7 +134,7 @@ while "" do--silly goofball loop
 		buffer1 = nil
 		local chunk = ""
 		local chunk1 = ""
-		local video = {{}}
+		local video = {}
 		local album = {}
 		local songdat = {}
 		local currentFrame = {}
@@ -98,10 +143,12 @@ while "" do--silly goofball loop
 		local frameNum = 0
 		local data
 		local data1
+		local subtitles
 		local status = "video"
 		parallel.waitForAny(function()
 			while true do
-				broadcastLoadingFrame(status)
+				--broadcastLoadingFrame(status)
+				--Need to make a new pbb compatible function
 				sleep(1/2)
 			end
 		end,
@@ -112,16 +159,11 @@ while "" do--silly goofball loop
 				songdat = textutils.unserializeJSON(a.readAll())
 				a.close()
 			end
+			-- warning: pigu code
+			status = ("subtitles")
+			subtitles = require("subtitles")
 			status = ("video")
-			if fs.exists(audiodir.."album.lua") then
-				album = require(audiodir.."album")[1]
-			else
-				album = makeScaryAlbum("music")
-			end
-			status = ("video")
-			if fs.exists(audiodir.."video.lua") then
-				video = require(audiodir.."video")
-			end
+			video = loadVideo()
 			status = ("audio")
 			data = fs.open(audiodir.."left.dfpwm","rb")
 			status = ("audio")
@@ -147,6 +189,7 @@ while "" do--silly goofball loop
 				end
 				currentFrame = video[frameNum]
 			end
+			if subtitles[frameNum] then subtitle = subtitles[frameNum] end
 			modem.transmit(channel, channel, { --transmit with audio so 1fps is around 12k bytes
 				protocol = "stereovideo",
 				type = broadcastType,
@@ -155,6 +198,7 @@ while "" do--silly goofball loop
 					right = buffer1
 				},
 				video = currentFrame,
+				subtitle = subtitle
 				meta = {
 					songmeta = songdat,
 					album = album,
