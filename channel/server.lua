@@ -4,9 +4,12 @@ local modem = peripheral.wrap("top")
 local channel = 666
 local chunkDivider = 2
 local owner = "USERNAME HERE"
+local station = "Test Station"
+local program = "Test Broadcast"
 --directories
-local broadcastType = "audio"
+local broadcastType = "video"
 local showAlarm = false
+local hasSubtitles = false
 --fallback video
 local fallback ={ 	{"Hello, world!  ","123456789abcdef","000000000000000"},
 					{"Hello, world!  ","000000000000000","123456789abcdef"},
@@ -56,19 +59,29 @@ end
 function loadVideo()
 	local datas = {}
 
-	local filename = "net/out.pbb"
+	local filename = audiodir.."out.pbb"
 	local file = fs.open(filename, "rb")
 	local filedata = file.readAll()
 	file.close()
-
+	print("Video loaded, starting decoding")
 	local off = 0
 
 	local b = {}
-	for x=1,filedata:len() do
+	local c = filedata:len() 
+	for x=1,c do
 		table.insert(b, math.floor(filedata:byte(x)))
+		if x % 300 == 0 then
+			sleep()
+			print("current: "..x, "remaining: "..c)
+		end
 	end
-
+	print("Video decode 1")
+	local a = 0
 	while 1 do
+		a = a + 1
+		if x % 300 == 0 then
+			sleep()
+		end
 		print(b[1+off], "balls")
 		if b[1+off]==nil then break end
 		local size = {w = b[1+off]^2^8+b[2+off], h = b[3+off]^2^8+b[4+off]} --Convert the first 4 bytes to 2 16 bit numbers representing width and height.
@@ -90,6 +103,8 @@ function loadVideo()
 		local rdata = filedata:sub(1+off, nextoff)
 		table.insert(datas, rdata)
 		off = nextoff
+
+		sleep()
 	end
 
 	return datas
@@ -112,6 +127,8 @@ function broadcastLoadingFrame(video)
 				song="Loading...",
 				year=1234
 			},
+			name="Loading...",
+			title="Loading...",
 			album = makeScaryAlbum(video),
 			owner = owner
 		}
@@ -160,15 +177,23 @@ while "" do--silly goofball loop
 				a.close()
 			end
 			-- warning: pigu code
-			status = ("subtitles")
-			subtitles = require("subtitles")
+			if hasSubtitles then
+				status = ("subtitles")
+				subtitles = require("subtitles")
+				print(status)
+			end
 			status = ("video")
-			video = loadVideo()
+			video = loadVideo(audiodir)
+			print(status)
+			--warning: not pigu code
 			status = ("audio")
 			data = fs.open(audiodir.."left.dfpwm","rb")
+			print(status)
 			status = ("audio")
 			data1 = fs.open(audiodir.."right.dfpwm","rb")
+			print(status)
 			status = ("start")
+			print(status)
 		end)
 		local decoder = dfpwm.make_decoder()
 		local decoder1 = dfpwm.make_decoder()
@@ -189,7 +214,11 @@ while "" do--silly goofball loop
 				end
 				currentFrame = video[frameNum]
 			end
-			if subtitles[frameNum] then subtitle = subtitles[frameNum] end
+			if subtitles and subtitles[frameNum] then 
+				subtitle = subtitles[frameNum] 
+			else
+				subtitle = ""
+			end
 			modem.transmit(channel, channel, { --transmit with audio so 1fps is around 12k bytes
 				protocol = "stereovideo",
 				type = broadcastType,
@@ -198,10 +227,12 @@ while "" do--silly goofball loop
 					right = buffer1
 				},
 				video = currentFrame,
-				subtitle = subtitle
+				subtitle = subtitle,
 				meta = {
-					songmeta = songdat,
-					album = album,
+					--songmeta = songdat,
+					--album = album,
+					name = station,
+					title = program,
 					owner = "thesuntrail"
 				}
 			})

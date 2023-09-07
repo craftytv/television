@@ -93,10 +93,7 @@ end
 local function drawVideo(video,fsubtitle)
     if video ~= lastFrame and monitor then
 		frame.setVisible(false)
-		if video=={} or video == nil then
-			return
-		end
-		if format=="bimg" then
+		if type(video) == "table" then
 			if video.palette then
 				setColorPalette(video.palette)
 			else
@@ -191,6 +188,8 @@ local function drawVideo(video,fsubtitle)
 			end
 
 			renderSubtitles(mon, subtitle, c(bg), c(fg))
+			chanDisplay.setBackgroundColor(c(bg))
+			chanDisplay.setTextColor(c(fg))
 		end
 		frame.setVisible(true)
 		chanDisplay.redraw()
@@ -240,6 +239,7 @@ local function video()
 				drawVideo(dat["video"], dat["subtitle"])
 				drawScreen(dat)
 			end
+		elseif false then
 		end
 	end
 end
