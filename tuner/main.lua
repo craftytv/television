@@ -4,17 +4,8 @@ local modem = _G.modem
 
 local format = "pbb"
 
-local pb
-local status, err = pcall(function () pb = require("pixelbox_lite") end) -- Installation script : wget https://github.com/9551-Dev/apis/raw/main/pixelbox_lite.lua
-if err then
-    print("Pixelbox not installed")
-    print("Would you like to install it? [yes/no]")
-    if read()=="yes" then
-        shell.run("wget https://github.com/9551-Dev/apis/raw/main/pixelbox_lite.lua")
-    else
-        return
-    end
-end
+local pb = _G.pb
+
 
 local oldChannel = 666
 local channel = 666
@@ -102,6 +93,9 @@ end
 local function drawVideo(video,fsubtitle)
     if video ~= lastFrame and monitor then
 		frame.setVisible(false)
+		if video=={} or video == nil then
+			return
+		end
 		if format=="bimg" then
 			if video.palette then
 				setColorPalette(video.palette)
