@@ -92,7 +92,7 @@ local datas = {}
 
 function c(n) if n then return math.floor(2^n) end return 1 end
 
-local bg = 15
+local bg = 0
 local fg = 0
 
 local function getRGB(x)
@@ -243,7 +243,7 @@ local function video()
 		if dat and type(dat) == "table" and dat["protocol"] == "stereovideo" and c == channel then
 			if type(dat) == "table" and dat["video"] then
 				lastConnect = os.epoch("utc")
-				drawVideo(dat["video"])
+				drawVideo(dat["video"], dat["subtitle"])
 				drawScreen(dat)
 			end
 		end
