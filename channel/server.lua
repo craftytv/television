@@ -6,6 +6,8 @@ local chunkDivider = 2
 local owner = "USERNAME HERE"
 local station = "Test Station"
 local program = "Test Broadcast"
+
+local format = "pbb"
 --directories
 local broadcastType = "video"
 local showAlarm = false
@@ -148,6 +150,8 @@ while "" do--silly goofball loop
 		audiodir = audiodir1[1]
 		if audiodir1[2] then
 			chunkDivider = audiodir1[2]
+		elseif format == "pbb" then
+			chunkDivider = audiodir1[3]
 		else
 			chunkDivider = 2
 		end
