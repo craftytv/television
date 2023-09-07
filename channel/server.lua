@@ -70,7 +70,7 @@ function loadVideo()
 	local c = filedata:len() 
 	for x=1,c do
 		table.insert(b, math.floor(filedata:byte(x)))
-		if x % 300 == 0 then
+		if x % 3000000 == 0 then
 			sleep()
 			print("current: "..x, "remaining: "..c)
 		end
@@ -79,7 +79,7 @@ function loadVideo()
 	local a = 0
 	while 1 do
 		a = a + 1
-		if x % 300 == 0 then
+		if a % 3000000 == 0 then
 			sleep()
 		end
 		print(b[1+off], "balls")
