@@ -224,7 +224,6 @@ local function audio()
 		local _,_,c,_,dat,_ = os.pullEventRaw("modem_message","terminate")
 		if dat and type(dat) == "table" and dat["protocol"] == "stereovideo" and c == channel then
 			if type(dat) == "table" and dat["audio"] then
-				lastConnect = os.epoch("utc")
 				speakerlib.setStereoBuffers(dat["audio"].left,dat["audio"].right)
 				parallel.waitForAll(table.unpack(speakers))
 			end

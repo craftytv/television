@@ -8,6 +8,10 @@ local station = "Test Station"
 local program = "Test Broadcast"
 
 local format = "pbb"
+local args = {...}
+if args[1] then
+	format = args[1]
+end
 --directories
 local broadcastType = "video"
 local showAlarm = false
@@ -141,7 +145,9 @@ function broadcastLoadingFrame(video)
 		}
 	})
 end
-
+if not _G.bimg then
+	_G.bimg = {}
+end
 local subtitle = ""
 --main
 local songs = require("/net/songs")
@@ -192,7 +198,14 @@ while "" do--silly goofball loop
 				print(status)
 			end
 			status = ("video")
-			video = loadVideo(audiodir)
+			if format == "pbb" then
+				video = loadVideo(audiodir)
+			else
+				if not _G.bimg[audiodir.."video"] then
+					_G.bimg[audiodir.."video"] = require(audiodir.."video")
+				end
+				video = _G.bimg[audiodir.."video"]
+			end
 			print(status)
 			--warning: not pigu code
 			status = ("audio")
@@ -223,7 +236,7 @@ while "" do--silly goofball loop
 				end
 				currentFrame = video[frameNum]
 			end
-			if subtitles and subtitles[frameNum] then 
+			if subtitles and subtitles[frameNum] and format == "pbb" then 
 				subtitle = subtitles[frameNum] 
 			else
 				subtitle = ""
