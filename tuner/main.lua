@@ -158,23 +158,19 @@ local function drawVideo(video,fsubtitle)
 			local doublepix = false
 
 			for x=1,size.w do
-				for y=1,size.h do
-					if doublepix then
-						for h=0,1 do
-							for l=0,1 do
-								monitor:set_pixel(x*2-1+h,y*2-1+l,c(t[offset+x+y*size.w])) --(not supported)
-							end
-						end
-					else
-						for h=0,math.ceil(size.w/(monsizew*2))+1 do
-							for l=0,math.ceil(size.h/(monsizeh*3))+1 do
-								local status, err = pcall(function()
-								monitor:set_pixel(math.floor(x*((monsizew*2)/size.w))+h,math.floor(y*((monsizeh*3)/size.h))+l,c(t[offset+x+y*size.w]))
-								end)
-							end
-						end
-					end
-				end
+    				for y=1,size.h do
+        				if doublepix then
+            					for h=0,1 do
+                					for l=0,1 do
+                    						monitor:set_pixel(x*2-1+h,y*2-1+l,c(t[offset+x+y*size.w])) --(not supported)
+                					end
+            					end
+        				else
+            					local status, err = pcall(function()
+            						monitor:set_pixel(math.floor(x*((monsizew*2)/size.w)),math.floor(y*((monsizeh*3)/size.h)),c(t[offset+x+y*size.w]))
+            					end)
+       					end
+    				end
 			end
 
 			monitor:render()
