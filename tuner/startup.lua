@@ -11,6 +11,7 @@ if err then
     print("Would you like to install it? [yes/no]")
     if read()=="yes" then
         shell.run("wget https://github.com/9551-Dev/apis/raw/main/pixelbox_lite.lua")
+	os.reboot()
     else
         return
     end
