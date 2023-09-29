@@ -22,33 +22,34 @@ if args[1] then
     channel = tonumber(args[1])
 end
 
-local monitor = peripheral.find("monitor")
-monitor.clear()
-monitor.setTextScale(0.5)
-width,height = monitor.getSize()
+local mon = peripheral.find("monitor")
+local monitor = mon
+mon.clear()
+mon.setTextScale(0.5)
+width,height = mon.getSize()
 --get speaker functions
 local speakers,stop = speakerlib.getStereoFunctions((speakerlib.getLeftSpeakers() ~= {}) and speakerlib.getLeftSpeakers() or {"left"},(speakerlib.getRightSpeakers() ~= {}) and speakerlib.getRightSpeakers() or {"right"},tonumber(args[2]))
 modem.open(tonumber(channel))
 --video!!!
-local width,height = monitor.getSize()
+local width,height = mon.getSize()
 local termx,termy = term.getSize()
 local frame
 local chanDisplay
 
-monitor.setBackgroundColor(colors.blue)
-monitor.setTextColor(colors.white)
+mon.setBackgroundColor(colors.blue)
+mon.setTextColor(colors.white)
 
-frame = window.create(monitor,1,1,width,height)
+frame = window.create(mon,1,1,width,height)
 frame.setBackgroundColor(colors.blue)
 frame.setTextColor(colors.white)
 
-chanDisplay = window.create(monitor,2,2,13,3,false)
+chanDisplay = window.create(mon,2,2,13,3,false)
 chanDisplay.setBackgroundColor(colors.black)
 chanDisplay.setTextColor(colors.white)
 
 local normalColors = {}
-for i=0,15 do
-	normalColors[i] = table.pack(monitor.getPaletteColor(math.pow(2,i)))
+for i = 0, 15 do
+	normalColors[i] = table.pack(term.nativePaletteColor(2^i))
 end
 
 --base video functions
@@ -57,22 +58,22 @@ local lastCover = {}
 local function setColorPalette(colors)
 	for i=0,15 do
 		local x,y,z = table.unpack(colors[i])
-		monitor.setPaletteColor(math.pow(2,i),x,y,z)
+		mon.setPaletteColor(math.pow(2,i),x,y,z)
 	end
 end
 
 local subtitle = ""
 
 local function center(term, text, y)
-    local w,h = term.getSize()
-    term.setCursorPos(w/2-text:len()/2+1,y)
-    term.write(text)
+    local w,h = frame.getSize()
+    frame.setCursorPos(w/2-text:len()/2+1,y)
+    frame.write(text)
 end
 
 local function renderSubtitles(term, text, bg, fg)
-    term.setTextColor(fg)
-    term.setBackgroundColor(bg)
-    local w,h = term.getSize()
+    frame.setTextColor(fg)
+    frame.setBackgroundColor(bg)
+    local w,h = frame.getSize()
     for x=1,math.ceil(text:len()/w) do
         center(term, text:sub((x-1)*w+1, x*w), h-math.ceil(text:len()/w)+x)
     end
@@ -87,20 +88,19 @@ local bg = 0
 local fg = 0
 
 local function getRGB(x)
-    return colors.packRGB(mon.getPaletteColor(c(x)))
+    return colors.packRGB(frame.getPaletteColor(c(x)))
 end
 
 local function drawVideo(video,fsubtitle)
-    if video ~= lastFrame and monitor then
+    if video ~= lastFrame and mon then
 		frame.setVisible(false)
-		if video=={} or video == nil then
-			return
-		end
-		if format=="bimg" then
+		if type(video) == "table" then
 			if video.palette then
 				setColorPalette(video.palette)
 			else
-				setColorPalette(normalColors)
+				for x=0,15 do
+					mon.setPaletteColor(2^x, term.nativePaletteColor(2^x)) -- Palette mode 1: native terminal colors
+				end
 			end
 			for y=1,#video do
 				if y > height then
@@ -111,7 +111,6 @@ local function drawVideo(video,fsubtitle)
 			end
 		else
 			local data = video
-			local mon = frame
 
 			if fsubtitle then
 				subtitle = fsubtitle
@@ -130,7 +129,7 @@ local function drawVideo(video,fsubtitle)
 
 			if b[5]%16==1 then
 				for x=0,15 do
-					mon.setPaletteColor(2^x, mon.nativePaletteColor(2^x)) -- Palette mode 1: native terminal colors
+					mon.setPaletteColor(2^x, term.nativePaletteColor(2^x)) -- Palette mode 1: native terminal colors
 				end
 			end
 
@@ -151,8 +150,8 @@ local function drawVideo(video,fsubtitle)
 				end
 			end
 
-			local monitor = pb.new(mon)
-			local monsizew, monsizeh = mon.getSize()
+			local monitor = pb.new(frame)
+			local monsizew, monsizeh = frame.getSize()
 
 			monitor:clear(c(15))
 
@@ -187,6 +186,8 @@ local function drawVideo(video,fsubtitle)
 			end
 
 			renderSubtitles(mon, subtitle, c(bg), c(fg))
+			chanDisplay.setBackgroundColor(c(bg))
+			chanDisplay.setTextColor(c(fg))
 		end
 		frame.setVisible(true)
 		chanDisplay.redraw()
@@ -219,7 +220,6 @@ local function audio()
 		local _,_,c,_,dat,_ = os.pullEventRaw("modem_message","terminate")
 		if dat and type(dat) == "table" and dat["protocol"] == "stereovideo" and c == channel then
 			if type(dat) == "table" and dat["audio"] then
-				lastConnect = os.epoch("utc")
 				speakerlib.setStereoBuffers(dat["audio"].left,dat["audio"].right)
 				parallel.waitForAll(table.unpack(speakers))
 			end
@@ -236,6 +236,7 @@ local function video()
 				drawVideo(dat["video"], dat["subtitle"])
 				drawScreen(dat)
 			end
+		elseif false then
 		end
 	end
 end
@@ -266,6 +267,9 @@ end
 --control loops
 local function changeChannel()
 	while "" and not killswitch1 do
+		for x=0,15 do
+			mon.setPaletteColor(2^x, term.nativePaletteColor(2^x))
+		end
 		killswitch = true
 		lastConnect = os.epoch("utc")
 		if oldChannel ~= 0 then
@@ -337,4 +341,5 @@ local function terminate()
 	monitor.setTextColor(colors.white)
 	monitor.clear()
 end
+setColorPalette(normalColors)
 parallel.waitForAll(fakeOff,terminate,remoteHandler)
