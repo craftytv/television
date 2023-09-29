@@ -341,4 +341,5 @@ local function terminate()
 	monitor.setTextColor(colors.white)
 	monitor.clear()
 end
+setColorPalette(normalColors)
 parallel.waitForAll(fakeOff,terminate,remoteHandler)
