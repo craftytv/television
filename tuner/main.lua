@@ -201,15 +201,7 @@ local function drawScreen(dat)
 		term.setCursorPos(1,termy)
 		term.write("Channel operated by "..dat.meta.owner)
 		term.setCursorPos(#("Ch:"..channel)+1,1)
-		if dat["type"] == "audio" and dat.album ~= lastCover then
-			term.write("  "..dat.meta.songmeta.artist.." - "..dat.meta.songmeta.song) 
-			for y=1,#dat.meta.album do
-				term.setCursorPos(1+1,y+1)
-				term.blit(dat.meta.album[y][1],dat.meta.album[y][2],dat.meta.album[y][3])
-			end
-		elseif dat["type"] == "video" then
-			print("  "..dat.meta.name.." - "..dat.meta.title) 
-		end
+		print("  "..dat.meta.name.." - "..dat.meta.title) 
 	end
 end
 
