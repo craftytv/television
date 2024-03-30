@@ -91,10 +91,10 @@ local function getRGB(x)
     return colors.packRGB(frame.getPaletteColor(c(x)))
 end
 
-local function drawVideo(video,fsubtitle)
+local function drawVideo(video,format,fsubtitle)
     if video ~= lastFrame and mon then
 		frame.setVisible(false)
-		if type(video) == "table" then
+		if string.lower(format) == "bimg" then
 			if video.palette then
 				setColorPalette(video.palette)
 			else
@@ -109,7 +109,7 @@ local function drawVideo(video,fsubtitle)
 				frame.setCursorPos(1,y)
 				frame.blit(video[y][1],video[y][2],video[y][3])
 			end
-		else
+		elseif string.lower(format) == "pbb" then
 			local data = video
 
 			if fsubtitle then
@@ -233,7 +233,7 @@ local function video()
 		if dat and type(dat) == "table" and dat["protocol"] == "stereovideo" and c == channel then
 			if type(dat) == "table" and dat["video"] then
 				lastConnect = os.epoch("utc")
-				drawVideo(dat["video"], dat["subtitle"])
+				drawVideo(dat["video"],dat["type"], dat["subtitle"])
 				drawScreen(dat)
 			end
 		elseif false then
@@ -279,7 +279,7 @@ local function changeChannel()
 		monitor.setBackgroundColor(colors.blue)
 		monitor.setTextColor(colors.white)
 		monitor.clear()
-		drawVideo({})
+		drawVideo({},"bimg")
 		drawScreen()
 		parallel.waitForAll(table.unpack(stop))
 		monitor.clear()
