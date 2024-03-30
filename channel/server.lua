@@ -7,7 +7,7 @@ local owner = "USERNAME HERE"
 local station = "Test Station"
 local program = "Test Broadcast"
 
-local format = "pbb"
+local format = "bimg"
 local args = {...}
 if args[1] then
 	format = args[1]
