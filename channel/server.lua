@@ -13,7 +13,7 @@ if args[1] then
 	format = args[1]
 end
 --directories
-local broadcastType = "video"
+local broadcastType = format
 local showAlarm = false
 local hasSubtitles = false
 --fallback video
