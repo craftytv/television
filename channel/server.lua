@@ -1,19 +1,23 @@
 --silly speaker stuff
+local speaker = peripheral.wrap("left")
 local dfpwm = require("cc.audio.dfpwm")
+local tinyvideo = require("tinyvideo")
 local modem = peripheral.wrap("top")
 local channel = 666
 local chunkDivider = 2
-local owner = "USERNAME HERE"
-local station = "Test Station"
-local program = "Test Broadcast"
+local owner = "Featherwhisker"
+local station = "666"
 
 local format = "bimg"
 local args = {...}
 if args[1] then
 	format = args[1]
 end
+if format == "pbb" then
+	error("Sorry, I broke pixelbox binary :(")
+end
 --directories
-local broadcastType = format
+local broadcastType = "video"
 local showAlarm = false
 local hasSubtitles = false
 --fallback video
@@ -27,7 +31,7 @@ local fallback ={ 	{"Hello, world!  ","123456789abcdef","000000000000000"},
 					{"Hello, world!  ","000000000000000","123456789abcdef"},
 					{"Hello, world!  ","123456789abcdef","000000000000000"},
 					{"Hello, world!  ","000000000000000","123456789abcdef"}}
-					
+
 --make loading frame
 function makeScaryFrame(video) --SCARY frame!!!
 	local blank = {}
@@ -38,21 +42,6 @@ function makeScaryFrame(video) --SCARY frame!!!
 	math.randomseed(os.epoch("utc"))
 	local num = math.random(1,2)
 	for i=1,38 do -- width 57
-		if i % 2 == 0 then
-			blank[i] = {text,color1,color2}
-		else
-			blank[i] = {text1,color2,color1}
-		end
-	end
-	return blank
-end
-function makeScaryAlbum(video) --SCARY video!!!
-	local blank = {}
-	local text = (video):rep(3)..string.sub(video,1,2)
-	local text1 = string.sub(video,4,5)..(video):rep(3)
-	local color1 = ("0"):rep(17)
-	local color2 = ("12345"):rep(3).."12"
-	for i=1,11 do -- width 57
 		if i % 2 == 0 then
 			blank[i] = {text,color1,color2}
 		else
@@ -75,7 +64,7 @@ function loadVideo(audiodir)
 		local off = 0
 
 		local b = {}
-		local c = filedata:len() 
+		local c = filedata:len()
 		for x=1,c do
 			table.insert(b, math.floor(filedata:byte(x)))
 			if x % 3000000 == 0 then
@@ -150,9 +139,9 @@ if not _G.bimg then
 end
 local subtitle = ""
 --main
-local songs = require("/net/songs")
+local songs = require("songs")
 while "" do--silly goofball loop
-	for _,audiodir1 in pairs(songs) do 
+	for _,audiodir1 in ipairs(songs) do
 		audiodir = audiodir1[1]
 		if audiodir1[2] then
 			chunkDivider = audiodir1[2]
@@ -179,18 +168,12 @@ while "" do--silly goofball loop
 		local status = "video"
 		parallel.waitForAny(function()
 			while true do
-				--broadcastLoadingFrame(status)
+				broadcastLoadingFrame(status)
 				--Need to make a new pbb compatible function
 				sleep(1/2)
 			end
 		end,
 		function()
-			status = ("audio")
-			if fs.exists(audiodir.."metadata.json") then
-				local a = fs.open(audiodir.."metadata.json","r")
-				songdat = textutils.unserializeJSON(a.readAll())
-				a.close()
-			end
 			-- warning: pigu code
 			if hasSubtitles then
 				status = ("subtitles")
@@ -201,43 +184,36 @@ while "" do--silly goofball loop
 			if format == "pbb" then
 				video = loadVideo(audiodir)
 			else
+				--warning: not pigu code
 				if not _G.bimg[audiodir.."video"] then
-					_G.bimg[audiodir.."video"] = require(audiodir.."video")
+					--_G.bimg[audiodir.."video"] = tinybimg:decode(audiodir.."video.tinybimg")
+					_G.bimg[audiodir.."video"] = tinyvideo:decode(http.get(songs.url..audiodir,nil,true))
+					program = audiodir
 				end
 				video = _G.bimg[audiodir.."video"]
+				chunkDivider = video.frameRate
 			end
 			print(status)
-			--warning: not pigu code
-			status = ("audio")
-			data = fs.open(audiodir.."left.dfpwm","rb")
-			print(status)
-			status = ("audio")
-			data1 = fs.open(audiodir.."right.dfpwm","rb")
-			print(status)
+			
 			status = ("start")
 			print(status)
 		end)
 		local decoder = dfpwm.make_decoder()
 		local decoder1 = dfpwm.make_decoder()
 		sleep(1/chunkDivider)
-		while chunk and chunk1 do
-			chunk = data.read(12000/chunkDivider) -- 12000 equal to 1 second
-			chunk1 = data1.read(12000/chunkDivider)
-
-			if not chunk or not chunk1 then
-				break
-			end
-			buffer = decoder(chunk)
-			buffer1 = decoder1(chunk1)
+		while true do
 			if "" then
 				frameNum = frameNum + 1
 				if frameNum > #video then
-					frameNum = 1
+					break
+					--frameNum = 1
 				end
 				currentFrame = video[frameNum]
 			end
-			if subtitles and subtitles[frameNum] and format == "pbb" then 
-				subtitle = subtitles[frameNum] 
+			buffer = decoder(currentFrame.audio.left)
+			buffer1 = decoder1(currentFrame.audio.right)
+			if subtitles and subtitles[frameNum] and format == "pbb" then
+				subtitle = subtitles[frameNum]
 			else
 				subtitle = ""
 			end
@@ -251,17 +227,15 @@ while "" do--silly goofball loop
 				video = currentFrame,
 				subtitle = subtitle,
 				meta = {
-					--songmeta = songdat,
-					--album = album,
 					name = station,
 					title = program,
-					owner = "thesuntrail"
+					owner = owner
 				}
 			})
-			sleep(1/chunkDivider+1/20)
+			while not speaker.playAudio(buffer,0) do
+				os.pullEvent("speaker_audio_empty")
+			end
 		end
-		data.close()
-		data1.close()
 		sleep(1/chunkDivider)
 	end
 end
