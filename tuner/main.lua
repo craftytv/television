@@ -58,7 +58,7 @@ local lastCover = {}
 local function setColorPalette(colors)
 	for i=0,15 do
 		local x,y,z = table.unpack(colors[i])
-		mon.setPaletteColor(math.pow(2,i),x,y,z)
+		mon.setPaletteColor(2^i,x,y,z)
 	end
 end
 
@@ -334,4 +334,4 @@ local function terminate()
 	monitor.clear()
 end
 setColorPalette(normalColors)
-parallel.waitForAll(fakeOff,terminate,remoteHandler)
+parallel.waitForAll(fakeOff,terminate)--,remoteHandler)

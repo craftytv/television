@@ -6,6 +6,7 @@ local modem = peripheral.wrap("top")
 local channel = 666
 local chunkDivider = 2
 local owner = "Featherwhisker"
+local program = ""
 local station = "666"
 
 local format = "bimg"
@@ -120,16 +121,8 @@ function broadcastLoadingFrame(video)
 		},
 		video = makeScaryFrame(video),
 		meta = {
-			songmeta = {
-				metaver=1,
-				artist="Loading...",
-				album="Loading...",
-				song="Loading...",
-				year=1234
-			},
 			name="Loading...",
 			title="Loading...",
-			album = makeScaryAlbum(video),
 			owner = owner
 		}
 	})
@@ -168,7 +161,7 @@ while "" do--silly goofball loop
 		local status = "video"
 		parallel.waitForAny(function()
 			while true do
-				broadcastLoadingFrame(status)
+				--broadcastLoadingFrame(status)
 				--Need to make a new pbb compatible function
 				sleep(1/2)
 			end
@@ -187,9 +180,23 @@ while "" do--silly goofball loop
 				--warning: not pigu code
 				if not _G.bimg[audiodir.."video"] then
 					--_G.bimg[audiodir.."video"] = tinybimg:decode(audiodir.."video.tinybimg")
-					_G.bimg[audiodir.."video"] = tinyvideo:decode(http.get(songs.url..audiodir,nil,true))
-					program = audiodir
+					local supported = {
+						".tinyvideo"
+					}
+					local a = http.get(songs.url..audiodir,nil,true)
+					if audiodir:sub(-#supported[1]) == supported[1] then
+						_G.bimg[audiodir.."video"] = tinyvideo:decode(a)
+					else
+						print(audiodir:sub(-#supported[1]))
+						error("Unsupported!",0)
+					end
+					for i,v in pairs(_G.bimg[audiodir.."video"]) do
+						if type(i) ~= "number" and i ~= "extra" and i ~= "frameRate" then
+							_G.bimg[audiodir.."video"][i] = nil
+						end
+					end
 				end
+				program = audiodir
 				video = _G.bimg[audiodir.."video"]
 				chunkDivider = video.frameRate
 			end
@@ -201,40 +208,42 @@ while "" do--silly goofball loop
 		local decoder = dfpwm.make_decoder()
 		local decoder1 = dfpwm.make_decoder()
 		sleep(1/chunkDivider)
-		while true do
+		while true do --for frameNum,currentFrame in pairs(video) do
 			if "" then
 				frameNum = frameNum + 1
 				if frameNum > #video then
 					break
-					--frameNum = 1
 				end
 				currentFrame = video[frameNum]
 			end
-			buffer = decoder(currentFrame.audio.left)
-			buffer1 = decoder1(currentFrame.audio.right)
-			if subtitles and subtitles[frameNum] and format == "pbb" then
-				subtitle = subtitles[frameNum]
-			else
-				subtitle = ""
+			if type(frameNum) == "number" then
+				buffer = decoder(currentFrame.audio.left)
+				buffer1 = decoder1(currentFrame.audio.right)
+				if subtitles and subtitles[frameNum] and format == "pbb" then
+					subtitle = subtitles[frameNum]
+				else
+					subtitle = ""
+				end
+				modem.transmit(channel, channel, { --transmit with audio so 1fps is around 12k bytes
+					protocol = "stereovideo",
+					type = format,
+					audio = {
+						left = buffer,
+						right = buffer1
+					},
+					video = currentFrame,
+					subtitle = subtitle,
+					meta = {
+						name = station,
+						title = program,
+						owner = owner
+					}
+				})
+				while not speaker.playAudio(buffer,0) do
+					os.pullEvent("speaker_audio_empty")
+				end
 			end
-			modem.transmit(channel, channel, { --transmit with audio so 1fps is around 12k bytes
-				protocol = "stereovideo",
-				type = broadcastType,
-				audio = {
-					left = buffer,
-					right = buffer1
-				},
-				video = currentFrame,
-				subtitle = subtitle,
-				meta = {
-					name = station,
-					title = program,
-					owner = owner
-				}
-			})
-			while not speaker.playAudio(buffer,0) do
-				os.pullEvent("speaker_audio_empty")
-			end
+
 		end
 		sleep(1/chunkDivider)
 	end
